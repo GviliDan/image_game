@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Character Animation</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="animationContainer">
+    <canvas id="animationCanvas" width="800" height="600"></canvas>
+    <button id="addCharacterBtn">+</button>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('animationCanvas');
+    const ctx = canvas.getContext('2d');
+    const characters = [];
+
+    class Keyboard {
+      constructor() {
+        this.keys = {};
+        document.addEventListener('keydown', (event) => this.onKeyDown(event));
+        document.addEventListener('keyup', (event) => this.onKeyUp(event));
+      }
+
+      onKeyDown(event) {
+        this.keys[event.key] = true;
+      }
+
+      onKeyUp(event) {
+        this.keys[event.key] = false;
+      }
+
+      isKeyPressed(key) {
+        return this.keys[key] === true;
+      }
+
+      clearFocus() {
+        characters.forEach(character => {
+          character.inFocus = false;
+        });
+      }
+    }
+
+    const keyboard = new Keyboard();
+
+    function drawCharacters() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      characters.forEach(character => {
+        ctx.drawImage(character.img, character.x, character.y, 100, 100);
+        if (character.inFocus) {
+          ctx.strokeStyle = 'black';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(character.x, character.y, 100, 100);
+        }
+      });
+
+      requestAnimationFrame(drawCharacters);
+    }
+
+    function addCharacter() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+              characters.push({ img, x: Math.random() * (canvas.width - 100), y: Math.random() * (canvas.height - 100), inFocus: false });
+            };
+            img.src = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      };
+      input.click();
+    }
+
+    let speed = 5;
+
+    canvas.addEventListener('click', (e) => {
+      const canvasRect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - canvasRect.left;
+      const clickY = e.clientY - canvasRect.top;
+
+      characters.forEach(character => {
+        const { x, y } = character;
+        if (
+          clickX >= x && clickX <= x + 100 &&
+          clickY >= y && clickY <= y + 100
+        ) {
+          keyboard.clearFocus();
+          character.inFocus = true;
+        }
+      });
+    });
+
+    document.addEventListener("keydown", (e) => {
+      const selectedCharacter = characters.find(character => character.inFocus);
+      if (!selectedCharacter) return;
+
+      if (e.keyCode === 37) {
+        // Move left
+        if (selectedCharacter.x > 10)
+          selectedCharacter.x -= speed;
+      } else if (e.keyCode === 39) {
+        // Move right
+        if (selectedCharacter.x < 686)
+          selectedCharacter.x += speed;
+      } else if (e.keyCode === 38) {
+        // Move up
+        if (selectedCharacter.y > 10)
+          selectedCharacter.y -= speed;
+      } else if (e.keyCode === 40) {
+        // Move down
+        if (selectedCharacter.y < 491)
+          selectedCharacter.y += speed;
+      }
+    });
+
+    document.getElementById('addCharacterBtn').addEventListener('click', addCharacter);
+
+    // Start the game loop by calling the drawCharacters function
+    drawCharacters();
+  </script>
+</body>
+</html>
